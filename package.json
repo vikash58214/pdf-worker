@@ -1,0 +1,23 @@
+{
+  "name": "pdf-worker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "api": "node --expose-gc src/server.js",
+    "worker": "node --expose-gc src/worker.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@sparticuz/chromium": "^143.0.0",
+    "aws-sdk": "^2.1693.0",
+    "bullmq": "^5.66.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "ioredis": "^5.8.2",
+    "puppeteer-core": "^24.33.0"
+  }
+}
