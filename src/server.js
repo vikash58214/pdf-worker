@@ -131,26 +131,49 @@ app.get("/status/:jobId", async (req, res) => {
   }
 });
 
-// --------------------------------------------------------
-// Generate PDF instantly and auto-redirect to final PDF URL
-// --------------------------------------------------------
+const RENDER_PAGES = {
+  itineraryCrm:
+    "https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-itinerary-pdf",
+  itineraryCustom:
+    "https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-customTheme-pdf",
+  itineraryMain: "https://master.d3ubh7wpfu0fox.amplifyapp.com/pdf-preview",
+  invoice: "https://master.d3ubh7wpfu0fox.amplifyapp.com/invoice",
+  voucherMain: "https://master.d3ubh7wpfu0fox.amplifyapp.com/view-voucher",
+  voucherCrm: "https://master.d3ubh7wpfu0fox.amplifyapp.com/hotel-voucher",
+};
 app.get("/generate-now", async (req, res) => {
-  const { id, waterMark = false, mapViewButton = false } = req.query;
+  const {
+    id,
+    type = "itineraryCrm",
+    waterMark = false,
+    mapViewButton = false,
+  } = req.query;
 
   if (!id) {
     return res.status(400).json({ error: "Missing itinerary ID" });
   }
 
   try {
-    // 1️⃣ Build the render URL for your itinerary PDF UI
-    const renderUrl = `https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-itinerary-pdf?id=${id}&waterMark=${waterMark}&mapViewButton=${mapViewButton}`;
+    const baseUrl = RENDER_PAGES[type];
+
+    if (!baseUrl) {
+      return res.status(400).json({
+        error: "Invalid PDF type",
+        allowedTypes: Object.keys(RENDER_PAGES),
+      });
+    }
+
+    const renderUrl =
+      `${baseUrl}?id=${id}` +
+      `&waterMark=${waterMark}` +
+      `&mapViewButton=${mapViewButton}`;
 
     // 2️⃣ Create PDF job
     const job = await pdfQueue.add(
       "create-pdf",
       {
         url: renderUrl,
-        fileName: `itinerary-${id}`,
+        fileName: `${type}-${id}`,
         waterMark,
         mapViewButton,
       },
@@ -192,6 +215,11 @@ app.get("/generate-now", async (req, res) => {
 
       // else keep polling
     }, 1500);
+
+    // Clean up polling if client closes connection
+    req.on("close", () => {
+      clearInterval(interval);
+    });
   } catch (err) {
     console.error("Error generating now:", err);
     return res.status(500).json({ error: err.message });
