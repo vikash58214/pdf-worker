@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "api": "node --expose-gc src/server.js",
-    "worker": "node --expose-gc src/worker.js"
+    "start": "node --expose-gc src/server.js",
+    "dev": "node --expose-gc src/server.js"
   },
   "keywords": [],
   "author": "",

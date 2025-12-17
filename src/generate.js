@@ -9,7 +9,7 @@ const CONFIG = {
   PAGE_TIMEOUT: 45000,
   WAIT_AFTER_LOAD: 4000,
   RETRY_DELAY_BASE: 1500,
-  MAX_PDF_HEIGHT: 20000, // Prevents crashing due to huge itinerary pages
+  MAX_PDF_HEIGHT: 50000, // Increased to avoid forced pagination
 };
 
 export async function generateOptimizedPDF(url) {
@@ -79,6 +79,7 @@ async function attemptPDFGeneration(url, retries) {
 
       // Extra wait for dynamic React UI
       await wait(CONFIG.WAIT_AFTER_LOAD);
+      await page.emulateMediaType("print");
 
       // --------------------------
       // Measure Page Height
@@ -87,31 +88,41 @@ async function attemptPDFGeneration(url, retries) {
         const h = Math.max(
           document.body.scrollHeight,
           document.body.offsetHeight,
-          document.documentElement.clientHeight,
-          document.documentElement.scrollHeight,
-          document.documentElement.offsetHeight
+          document.documentElement.scrollHeight
         );
-
-        return {
-          height: h,
-          dpr: window.devicePixelRatio || 1,
-        };
+        return { height: h, dpr: window.devicePixelRatio || 1 };
       });
 
-      const scaledHeight = Math.min(height * dpr, CONFIG.MAX_PDF_HEIGHT);
+      // Match old working logic
+      const adjustedHeight = Math.min(height * dpr, CONFIG.MAX_PDF_HEIGHT);
+      const SCALE = 0.75;
+
       console.log(`Measured Height: ${height}px, DPR: ${dpr}`);
-      console.log(`Final PDF Height: ${scaledHeight}px`);
+      console.log(`Final PDF Height: ${adjustedHeight}px`);
+
+      // Disable page breaks via CSS
+      await page.addStyleTag({
+        content: `
+          * {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          body {
+            overflow: visible !important;
+          }
+        `,
+      });
 
       // --------------------------
       // Generate PDF
       // --------------------------
       const pdfBuffer = await page.pdf({
         printBackground: true,
-        preferCSSPageSize: false,
+        preferCSSPageSize: false, // prevent A4 fallback
         displayHeaderFooter: false,
-        scale: 0.75, // reduces size & improves speed
-        width: `${650 * 0.75}px`,
-        height: `${(scaledHeight + 100) * 0.75}px`,
+        scale: SCALE,
+        width: `${650 * SCALE}px`,
+        height: `${(adjustedHeight + 100) * SCALE}px`,
         margin: {
           top: "0px",
           bottom: "0px",
