@@ -2,6 +2,7 @@ import AWS from "aws-sdk";
 import dotenv from "dotenv";
 dotenv.config();
 
+const CDN_BASE_URL = "https://d19og5jzdjz5k4.cloudfront.net";
 // ------------------------------------
 // Initialize AWS S3
 // ------------------------------------
@@ -75,8 +76,9 @@ async function uploadSingle(buffer, bucket, key) {
     Bucket: bucket,
     Key: key,
     Body: buffer,
-    ACL: "public-read",
     ContentType: "application/pdf",
+    CacheControl: "public, max-age=31536000",
+    ContentDisposition: "inline",
     ServerSideEncryption: "AES256",
   };
 
@@ -97,28 +99,28 @@ async function uploadMultipart(buffer, bucket, key) {
         Bucket: bucket,
         Key: key,
         Body: buffer,
-        ACL: "public-read",
         ContentType: "application/pdf",
+        CacheControl: "public, max-age=31536000",
+        ContentDisposition: "inline",
         ServerSideEncryption: "AES256",
       },
       {
-        partSize: 5 * 1024 * 1024, // 5MB chunks
-        queueSize: 4, // parallel uploads
+        partSize: 5 * 1024 * 1024,
+        queueSize: 4,
       }
     )
     .promise();
 
-  return upload.Location;
+  return buildPublicUrl(key);
 }
 
 // ------------------------------------
 // Build Public URL (With CloudFront)
 // ------------------------------------
 function buildPublicUrl(key) {
-  if (process.env.CDN_URL) {
-    return `https://${process.env.CDN_URL}/${key}`;
+  if (!CDN_BASE_URL) {
+    throw new Error("CDN_URL is required (CloudFront domain)");
   }
 
-  // fallback: direct S3 link
-  return `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  return `${CDN_BASE_URL}/${key}`;
 }
