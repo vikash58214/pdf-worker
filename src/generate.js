@@ -122,7 +122,7 @@ async function attemptPDFGeneration(url, retries) {
         displayHeaderFooter: false,
         scale: SCALE,
         width: `${850}px`,
-        height: `${adjustedHeight + 100}px`,
+        height: `${adjustedHeight + 10}px`,
         margin: {
           top: "0px",
           bottom: "0px",
