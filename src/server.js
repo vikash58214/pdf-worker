@@ -44,7 +44,7 @@ const RENDER_PAGES = {
   invoice: "https://master.d3ubh7wpfu0fox.amplifyapp.com/invoice",
   voucherMain: "https://master.d3ubh7wpfu0fox.amplifyapp.com/view-voucher",
   voucherCrm: "https://master.d3ubh7wpfu0fox.amplifyapp.com/hotel-voucher",
-  magazinePro: "https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-magazinePro",
+  magazinePro: "https://staging.d3ubh7wpfu0fox.amplifyapp.com/crm-magazinePro",
 };
 
 const RENDER_PRINT_PAGES = {
