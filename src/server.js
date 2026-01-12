@@ -44,6 +44,7 @@ const RENDER_PAGES = {
   invoice: "https://master.d3ubh7wpfu0fox.amplifyapp.com/invoice",
   voucherMain: "https://master.d3ubh7wpfu0fox.amplifyapp.com/view-voucher",
   voucherCrm: "https://master.d3ubh7wpfu0fox.amplifyapp.com/hotel-voucher",
+  magazinePro: "https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-magazinePro",
 };
 
 const RENDER_PRINT_PAGES = {
@@ -59,6 +60,8 @@ app.get("/generate-now", async (req, res) => {
     type = "itineraryCrm",
     waterMark = false,
     mapViewButton = false,
+    proTip = false,
+    energyMeter = false,
   } = req.query;
 
   if (!id) {
@@ -75,8 +78,10 @@ app.get("/generate-now", async (req, res) => {
 
   const renderUrl =
     `${baseUrl}?id=${id}` +
+    `&proTip=${proTip}` +
     `&waterMark=${waterMark}` +
-    `&mapViewButton=${mapViewButton}`;
+    `&mapViewButton=${mapViewButton}` +
+    `&energyMeter=${energyMeter}`;
 
   try {
     console.log("Generating PDF for:", renderUrl);
