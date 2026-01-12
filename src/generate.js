@@ -95,7 +95,7 @@ async function attemptPDFGeneration(url, retries) {
 
       // Match old working logic
       const adjustedHeight = Math.min(height * dpr, CONFIG.MAX_PDF_HEIGHT);
-      const SCALE = 1;
+      const SCALE = 0.75;
 
       console.log(`Measured Height: ${height}px, DPR: ${dpr}`);
       console.log(`Final PDF Height: ${adjustedHeight}px`);
@@ -121,8 +121,8 @@ async function attemptPDFGeneration(url, retries) {
         preferCSSPageSize: false, // prevent A4 fallback
         displayHeaderFooter: false,
         scale: SCALE,
-        width: `${850}px`,
-        height: `${adjustedHeight + 100}px`,
+        width: `${650 * SCALE}px`,
+        height: `${(adjustedHeight + 100) * SCALE}px`,
         margin: {
           top: "0px",
           bottom: "0px",
