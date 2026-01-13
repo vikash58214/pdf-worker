@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { generateOptimizedPDF } from "./generate.js";
 import { generateOptimizedPrintPDF } from "./printPdf.js";
+import { generateOptimizedMagazineProPDF } from "./magazinePro.js";
 import { uploadToS3 } from "./upload.js";
 
 dotenv.config();
@@ -36,19 +37,20 @@ app.get("/", (req, res) => {
 // Render Pages Map
 // ------------------------------
 const RENDER_PAGES = {
-  itineraryCrm:
-    "https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-itinerary-pdf",
-  itineraryCustom:
-    "https://master.d3ubh7wpfu0fox.amplifyapp.com/crm-customTheme-pdf",
-  itineraryMain: "https://master.d3ubh7wpfu0fox.amplifyapp.com/pdf-preview",
-  invoice: "https://master.d3ubh7wpfu0fox.amplifyapp.com/invoice",
-  voucherMain: "https://master.d3ubh7wpfu0fox.amplifyapp.com/view-voucher",
-  voucherCrm: "https://master.d3ubh7wpfu0fox.amplifyapp.com/hotel-voucher",
-  magazinePro: "https://itinerarypdf.netlify.app/crm-magazinePro",
+  itineraryCrm: `${process.env.DOMAIN}/crm-itinerary-pdf`,
+  itineraryCustom: `${process.env.DOMAIN}/crm-customTheme-pdf`,
+  itineraryMain: `${process.env.DOMAIN}/pdf-preview`,
+  invoice: `${process.env.DOMAIN}/invoice`,
+  voucherMain: `${process.env.DOMAIN}/view-voucher`,
+  voucherCrm: `${process.env.DOMAIN}/hotel-voucher`,
 };
 
 const RENDER_PRINT_PAGES = {
-  itineraryCrm: "https://master.d3ubh7wpfu0fox.amplifyapp.com/print-pdf-crm",
+  itineraryCrm: `${process.env.DOMAIN}/print-pdf-crm`,
+};
+
+const RENDER_MAGAZINE_PAGE = {
+  magazinePro: `${process.env.DOMAIN}/crm-magazinePro`,
 };
 
 // ------------------------------
@@ -60,8 +62,6 @@ app.get("/generate-now", async (req, res) => {
     type = "itineraryCrm",
     waterMark = false,
     mapViewButton = false,
-    proTip = false,
-    energyMeter = false,
   } = req.query;
 
   if (!id) {
@@ -78,10 +78,8 @@ app.get("/generate-now", async (req, res) => {
 
   const renderUrl =
     `${baseUrl}?id=${id}` +
-    `&proTip=${proTip}` +
     `&waterMark=${waterMark}` +
-    `&mapViewButton=${mapViewButton}` +
-    `&energyMeter=${energyMeter}`;
+    `&mapViewButton=${mapViewButton}`;
 
   try {
     console.log("Generating PDF for:", renderUrl);
@@ -150,6 +148,53 @@ app.get("/generate-now-print", async (req, res) => {
   }
 });
 
+app.get("/magazinePro", async (req, res) => {
+  const {
+    id,
+    type = "magazinePro",
+    proTip = true,
+    energyMeter = true,
+    mapViewButton = false,
+  } = req.query;
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing ID" });
+  }
+
+  const baseUrl = RENDER_MAGAZINE_PAGE[type];
+  if (!baseUrl) {
+    return res.status(400).json({
+      error: "Invalid PDF type",
+      allowedTypes: Object.keys(RENDER_MAGAZINE_PAGE),
+    });
+  }
+
+  const renderUrl =
+    `${baseUrl}?id=${id}` +
+    `&proTip=${proTip}` +
+    `&energyMeter=${energyMeter}` +
+    `&mapViewButton=${mapViewButton}`;
+
+  try {
+    console.log("Generating PDF for:", renderUrl);
+
+    // 1️⃣ Generate PDF
+    const pdfBuffer = await generateOptimizedMagazineProPDF(renderUrl);
+
+    // 2️⃣ Upload to S3
+    const key = `crm-pdf/${type}-${id}-${Date.now()}.pdf`;
+    const publicUrl = await uploadToS3(pdfBuffer, key);
+
+    // 3️⃣ Redirect user
+    return res.redirect(302, publicUrl);
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    return res.status(500).json({
+      error: "PDF generation failed",
+      message: err.message,
+    });
+  }
+});
 // ------------------------------
 // Start Server
 // ------------------------------

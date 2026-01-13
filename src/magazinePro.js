@@ -12,7 +12,7 @@ const CONFIG = {
   MAX_PDF_HEIGHT: 50000, // Increased to avoid forced pagination
 };
 
-export async function generateOptimizedPDF(url) {
+export async function generateOptimizedMagazineProPDF(url) {
   return attemptPDFGeneration(url, CONFIG.MAX_RETRIES);
 }
 
@@ -95,7 +95,7 @@ async function attemptPDFGeneration(url, retries) {
 
       // Match old working logic
       const adjustedHeight = Math.min(height * dpr, CONFIG.MAX_PDF_HEIGHT);
-      const SCALE = 0.75;
+      const SCALE = 1;
 
       console.log(`Measured Height: ${height}px, DPR: ${dpr}`);
       console.log(`Final PDF Height: ${adjustedHeight}px`);
@@ -121,8 +121,8 @@ async function attemptPDFGeneration(url, retries) {
         preferCSSPageSize: false, // prevent A4 fallback
         displayHeaderFooter: false,
         scale: SCALE,
-        width: `${650 * SCALE}px`,
-        height: `${(adjustedHeight + 100) * SCALE}px`,
+        width: `${850}px`,
+        height: `${adjustedHeight + 10}px`,
         margin: {
           top: "0px",
           bottom: "0px",
