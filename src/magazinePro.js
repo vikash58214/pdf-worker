@@ -9,7 +9,8 @@ const CONFIG = {
   PAGE_TIMEOUT: 45000,
   WAIT_AFTER_LOAD: 4000,
   RETRY_DELAY_BASE: 1500,
-  MAX_PDF_HEIGHT: 50000, // Increased to avoid forced pagination
+  MAX_PDF_HEIGHT: 50000,
+  PDF_WIDTH: 850, // Define width constant to ensure consistency
 };
 
 export async function generateOptimizedMagazineProPDF(url) {
@@ -23,9 +24,6 @@ async function attemptPDFGeneration(url, retries) {
     try {
       console.log(`PDF Attempt ${attempt}/${retries} → URL: ${url}`);
 
-      // --------------------------
-      // Launch Puppeteer
-      // --------------------------
       const isLocal = os.platform() === "darwin";
 
       const executablePath = isLocal
@@ -50,8 +48,9 @@ async function attemptPDFGeneration(url, retries) {
         executablePath,
         headless: true,
         defaultViewport: {
-          width: 400,
-          height: 800,
+          width: CONFIG.PDF_WIDTH, // FIXED: Match PDF width here
+          height: 800, // Height doesn't matter much here, it expands
+          deviceScaleFactor: 1, // FIXED: Force 1x scale to avoid math confusion
         },
       });
 
@@ -62,9 +61,6 @@ async function attemptPDFGeneration(url, retries) {
 
       console.log("Navigating…");
 
-      // --------------------------
-      // Navigate
-      // --------------------------
       const response = await page.goto(url, {
         waitUntil: ["networkidle0", "domcontentloaded"],
         timeout: CONFIG.PAGE_TIMEOUT,
@@ -74,33 +70,27 @@ async function attemptPDFGeneration(url, retries) {
         throw new Error(`Failed to load page. Status: ${response?.status()}`);
       }
 
-      // Wait for body
       await page.waitForSelector("body", { timeout: 8000 });
-
-      // Extra wait for dynamic React UI
       await wait(CONFIG.WAIT_AFTER_LOAD);
-      await page.emulateMediaType("print");
+      await page.emulateMediaType("print"); // or 'screen' depending on your CSS
 
       // --------------------------
       // Measure Page Height
       // --------------------------
-      const { height, dpr } = await page.evaluate(() => {
-        const h = Math.max(
-          document.body.scrollHeight,
-          document.body.offsetHeight,
-          document.documentElement.scrollHeight
-        );
-        return { height: h, dpr: window.devicePixelRatio || 1 };
+      const { height } = await page.evaluate(() => {
+        // Use documentElement to capture full height, usually safer than body
+        const h = document.documentElement.scrollHeight;
+        return { height: h };
       });
 
-      // Match old working logic
-      const adjustedHeight = Math.min(height * dpr, CONFIG.MAX_PDF_HEIGHT);
-      const SCALE = 1;
+      // FIXED: Removed DPR multiplication.
+      // page.pdf expects CSS pixels, which matches the scrollHeight exactly.
+      const adjustedHeight = Math.min(height, CONFIG.MAX_PDF_HEIGHT);
 
-      console.log(`Measured Height: ${height}px, DPR: ${dpr}`);
+      console.log(`Measured Height: ${height}px`);
       console.log(`Final PDF Height: ${adjustedHeight}px`);
 
-      // Disable page breaks via CSS
+      // Disable page breaks
       await page.addStyleTag({
         content: `
           * {
@@ -109,6 +99,7 @@ async function attemptPDFGeneration(url, retries) {
           }
           body {
             overflow: visible !important;
+            height: auto !important; 
           }
         `,
       });
@@ -118,11 +109,11 @@ async function attemptPDFGeneration(url, retries) {
       // --------------------------
       const pdfBuffer = await page.pdf({
         printBackground: true,
-        preferCSSPageSize: false, // prevent A4 fallback
+        preferCSSPageSize: false,
         displayHeaderFooter: false,
-        scale: SCALE,
-        width: `${850}px`,
-        height: `${adjustedHeight + 10}px`,
+        scale: 1,
+        width: `${CONFIG.PDF_WIDTH}px`, // Matches viewport
+        height: `${adjustedHeight + 2}px`, // Small buffer +2px to prevent cutoff
         margin: {
           top: "0px",
           bottom: "0px",
@@ -140,7 +131,6 @@ async function attemptPDFGeneration(url, retries) {
       await browser.close();
       browser = null;
 
-      // Cleanup memory
       if (global.gc) global.gc();
 
       return pdfBuffer;
@@ -168,7 +158,6 @@ async function attemptPDFGeneration(url, retries) {
   }
 }
 
-// Helper
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
