@@ -6,10 +6,10 @@ dotenv.config();
 
 const CONFIG = {
   MAX_RETRIES: 3,
-  PAGE_TIMEOUT: 45000,
+  PAGE_TIMEOUT: 120000,
   WAIT_AFTER_LOAD: 4000,
   RETRY_DELAY_BASE: 1500,
-  MAX_PDF_HEIGHT: 50000, // Increased to avoid forced pagination
+  MAX_PDF_HEIGHT: 200000, // Increased to avoid forced pagination
 };
 
 export async function generateOptimizedPDF(url) {
@@ -52,6 +52,7 @@ async function attemptPDFGeneration(url, retries) {
         defaultViewport: {
           width: 400,
           height: 800,
+          deviceScaleFactor: 1,
         },
       });
 
@@ -77,6 +78,9 @@ async function attemptPDFGeneration(url, retries) {
       // Wait for body
       await page.waitForSelector("body", { timeout: 8000 });
 
+      // Auto-scroll to trigger lazy loading
+      await autoScroll(page);
+
       // Extra wait for dynamic React UI
       await wait(CONFIG.WAIT_AFTER_LOAD);
       await page.emulateMediaType("print");
@@ -84,20 +88,15 @@ async function attemptPDFGeneration(url, retries) {
       // --------------------------
       // Measure Page Height
       // --------------------------
-      const { height, dpr } = await page.evaluate(() => {
-        const h = Math.max(
-          document.body.scrollHeight,
-          document.body.offsetHeight,
-          document.documentElement.scrollHeight
-        );
-        return { height: h, dpr: window.devicePixelRatio || 1 };
+      const { height } = await page.evaluate(() => {
+        const h = document.documentElement.scrollHeight;
+        return { height: h };
       });
 
-      // Match old working logic
-      const adjustedHeight = Math.min(height * dpr, CONFIG.MAX_PDF_HEIGHT);
+      const adjustedHeight = Math.min(height, CONFIG.MAX_PDF_HEIGHT);
       const SCALE = 0.75;
 
-      console.log(`Measured Height: ${height}px, DPR: ${dpr}`);
+      console.log(`Measured Height: ${height}px`);
       console.log(`Final PDF Height: ${adjustedHeight}px`);
 
       // Disable page breaks via CSS
@@ -109,6 +108,7 @@ async function attemptPDFGeneration(url, retries) {
           }
           body {
             overflow: visible !important;
+            height: auto !important;
           }
         `,
       });
@@ -122,7 +122,7 @@ async function attemptPDFGeneration(url, retries) {
         displayHeaderFooter: false,
         scale: SCALE,
         width: `${650 * SCALE}px`,
-        height: `${(adjustedHeight + 100) * SCALE}px`,
+        height: `${(adjustedHeight + 2) * SCALE}px`,
         margin: {
           top: "0px",
           bottom: "0px",
@@ -171,4 +171,23 @@ async function attemptPDFGeneration(url, retries) {
 // Helper
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function autoScroll(page) {
+  await page.evaluate(async () => {
+    await new Promise((resolve) => {
+      let totalHeight = 0;
+      const distance = 200;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+
+        if (totalHeight >= scrollHeight) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 50);
+    });
+  });
 }
