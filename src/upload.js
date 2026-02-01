@@ -2,7 +2,7 @@ import AWS from "aws-sdk";
 import dotenv from "dotenv";
 dotenv.config();
 
-const CDN_BASE_URL = "https://d19og5jzdjz5k4.cloudfront.net";
+const CDN_BASE_URL = "https://d1b9pullm5iua9.cloudfront.net";
 // ------------------------------------
 // Initialize AWS S3
 // ------------------------------------
@@ -10,7 +10,7 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
   accessKeyId: process.env.AWS_ACCESS,
   secretAccessKey: process.env.AWS_SECRET,
-  signatureVersion: "v4",
+  signatureVersion: "v4"
 });
 
 // ------------------------------------
@@ -19,7 +19,7 @@ const s3 = new AWS.S3({
 const CONFIG = {
   RETRIES: 3,
   RETRY_DELAY: 1500,
-  MULTIPART_THRESHOLD: 5 * 1024 * 1024, // 5 MB → use multipart upload
+  MULTIPART_THRESHOLD: 5 * 1024 * 1024 // 5 MB → use multipart upload
 };
 
 // ------------------------------------
@@ -79,7 +79,7 @@ async function uploadSingle(buffer, bucket, key) {
     ContentType: "application/pdf",
     CacheControl: "public, max-age=31536000",
     ContentDisposition: "inline",
-    ServerSideEncryption: "AES256",
+    ServerSideEncryption: "AES256"
   };
 
   await s3.putObject(params).promise();
@@ -102,11 +102,11 @@ async function uploadMultipart(buffer, bucket, key) {
         ContentType: "application/pdf",
         CacheControl: "public, max-age=31536000",
         ContentDisposition: "inline",
-        ServerSideEncryption: "AES256",
+        ServerSideEncryption: "AES256"
       },
       {
         partSize: 5 * 1024 * 1024,
-        queueSize: 4,
+        queueSize: 4
       }
     )
     .promise();
