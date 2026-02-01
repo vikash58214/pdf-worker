@@ -88,7 +88,10 @@ app.get("/generate-now", async (req, res) => {
     const pdfBuffer = await generateOptimizedPDF(renderUrl);
 
     // 2️⃣ Upload to S3
-    const key = `crm-pdf/${type}-${id}-${Date.now()}.pdf`;
+    const filename = `${type}-${id}-${Date.now()}.pdf`;
+    const key = req.query.userId
+      ? `crm-pdf/${type}/${req.query.userId}/${filename}`
+      : `crm-pdf/${filename}`;
     const publicUrl = await uploadToS3(pdfBuffer, key);
 
     // 3️⃣ Redirect user
@@ -134,7 +137,10 @@ app.get("/generate-now-print", async (req, res) => {
     const pdfBuffer = await generateOptimizedPrintPDF(renderUrl);
 
     // 2️⃣ Upload to S3
-    const key = `crm-pdf/${type}-${id}-${Date.now()}.pdf`;
+    const filename = `${type}-${id}-${Date.now()}.pdf`;
+    const key = req.query.userId
+      ? `crm-pdf/${type}/${req.query.userId}/${filename}`
+      : `crm-pdf/${filename}`;
     const publicUrl = await uploadToS3(pdfBuffer, key);
 
     // 3️⃣ Redirect user
@@ -182,7 +188,10 @@ app.get("/magazinePro", async (req, res) => {
     const pdfBuffer = await generateOptimizedMagazineProPDF(renderUrl);
 
     // 2️⃣ Upload to S3
-    const key = `crm-pdf/${type}-${id}-${Date.now()}.pdf`;
+    const filename = `${type}-${id}-${Date.now()}.pdf`;
+    const key = req.query.userId
+      ? `crm-pdf/${type}/${req.query.userId}/${filename}`
+      : `crm-pdf/${filename}`;
     const publicUrl = await uploadToS3(pdfBuffer, key);
 
     // 3️⃣ Redirect user

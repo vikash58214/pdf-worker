@@ -157,7 +157,7 @@ async function attemptPDFGeneration(url, retries) {
 
       if (attempt === retries) {
         throw new Error(
-          `PDF generation failed after ${retries} attempts → ${error.message}`
+          `PDF generation failed after ${retries} attempts → ${error.message}`,
         );
       }
 
